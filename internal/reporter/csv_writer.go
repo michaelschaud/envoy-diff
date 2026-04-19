@@ -22,7 +22,7 @@ func (c *CSVReportWriter) Write(w io.Writer, r *Report) error {
 		return err
 	}
 
-	writeSection := func(category string, keys []string, vals map[string]string, secondary map[string]string) {
+	writeSection := func(category string, keys []string, vals map[string]string, secondary map[string]string) error {
 		sorted := make([]string, len(keys))
 		copy(sorted, keys)
 		sort.Strings(sorted)
@@ -36,17 +36,24 @@ func (c *CSVReportWriter) Write(w io.Writer, r *Report) error {
 				staging = vals[k]
 				production = secondary[k]
 			}
-			_ = cw.Write([]string{category, k, staging, production})
+			if err := cw.Write([]string{category, k, staging, production}); err != nil {
+				return err
+			}
 		}
+		return nil
 	}
 
 	res := r.Result
 
 	addedKeys := keysOf(res.Added)
-	writeSection("added", addedKeys, res.Added, nil)
+	if err := writeSection("added", addedKeys, res.Added, nil); err != nil {
+		return err
+	}
 
 	removedKeys := keysOf(res.Removed)
-	writeSection("removed", removedKeys, res.Removed, nil)
+	if err := writeSection("removed", removedKeys, res.Removed, nil); err != nil {
+		return err
+	}
 
 	changedKeys := changedKeysOf(res.Changed)
 	stagingChanged := map[string]string{}
@@ -55,7 +62,9 @@ func (c *CSVReportWriter) Write(w io.Writer, r *Report) error {
 		stagingChanged[k] = res.Changed[k].From
 		prodChanged[k] = res.Changed[k].To
 	}
-	writeSection("changed", changedKeys, stagingChanged, prodChanged)
+	if err := writeSection("changed", changedKeys, stagingChanged, prodChanged); err != nil {
+		return err
+	}
 
 	cw.Flush()
 	return cw.Error()
