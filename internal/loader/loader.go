@@ -10,6 +10,7 @@ import (
 // LoadEnvFile reads a .env file and returns a map of key-value pairs.
 // Lines starting with '#' are treated as comments and ignored.
 // Empty lines are also ignored.
+// Values may optionally be quoted with single or double quotes, which are stripped.
 func LoadEnvFile(path string) (map[string]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -35,7 +36,7 @@ func LoadEnvFile(path string) (map[string]string, error) {
 		}
 
 		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
+		value := stripQuotes(strings.TrimSpace(parts[1]))
 
 		if key == "" {
 			return nil, fmt.Errorf("loader: %q line %d: empty key", path, lineNum)
@@ -49,4 +50,15 @@ func LoadEnvFile(path string) (map[string]string, error) {
 	}
 
 	return envs, nil
+}
+
+// stripQuotes removes surrounding single or double quotes from a value,
+// if the value starts and ends with the same quote character.
+func stripQuotes(s string) string {
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			return s[1 : len(s)-1]
+		}
+	}
+	return s
 }
