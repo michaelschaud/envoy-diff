@@ -12,6 +12,11 @@ type Result struct {
 	Production map[string]string
 }
 
+// HasDiff returns true if there are any added, removed, or changed keys.
+func (r Result) HasDiff() bool {
+	return len(r.Added) > 0 || len(r.Removed) > 0 || len(r.Changed) > 0
+}
+
 // Compare compares staging and production env maps and returns a Result.
 func Compare(staging, production map[string]string) Result {
 	result := Result{
