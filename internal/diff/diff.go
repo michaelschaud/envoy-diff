@@ -2,48 +2,48 @@ package diff
 
 import "sort"
 
-// EnvMap represents a set of environment variables.
-type EnvMap map[string]string
-
-// Result holds the diff between two EnvMaps.
+// Result holds the categorised diff between two env maps.
 type Result struct {
-	OnlyInLeft  map[string]string
-	OnlyInRight map[string]string
-	Modified    map[string][2]string // key -> [leftVal, rightVal]
-	Unchanged   map[string]string
+	// OnlyInA contains keys present only in the first (staging) map.
+	OnlyInA map[string]string
+	// OnlyInB contains keys present only in the second (production) map.
+	OnlyInB map[string]string
+	// Changed contains keys present in both maps but with different values.
+	// The value is [stagingVal, productionVal].
+	Changed map[string][2]string
+	// Common contains keys with identical values in both maps.
+	Common map[string]string
 }
 
-// Compare computes the diff between left (e.g. staging) and right (e.g. production).
-func Compare(left, right EnvMap) Result {
+// Compare diffs two environment variable maps, a (staging) and b (production).
+func Compare(a, b map[string]string) Result {
 	res := Result{
-		OnlyInLeft:  make(map[string]string),
-		OnlyInRight: make(map[string]string),
-		Modified:    make(map[string][2]string),
-		Unchanged:   make(map[string]string),
+		OnlyInA: make(map[string]string),
+		OnlyInB: make(map[string]string),
+		Changed: make(map[string][2]string),
+		Common:  make(map[string]string),
 	}
 
-	for k, lv := range left {
-		if rv, ok := right[k]; ok {
-			if lv == rv {
-				res.Unchanged[k] = lv
-			} else {
-				res.Modified[k] = [2]string{lv, rv}
-			}
+	for k, va := range a {
+		if vb, ok := b[k]; !ok {
+			res.OnlyInA[k] = va
+		} else if va != vb {
+			res.Changed[k] = [2]string{va, vb}
 		} else {
-			res.OnlyInLeft[k] = lv
+			res.Common[k] = va
 		}
 	}
 
-	for k, rv := range right {
-		if _, ok := left[k]; !ok {
-			res.OnlyInRight[k] = rv
+	for k, vb := range b {
+		if _, ok := a[k]; !ok {
+			res.OnlyInB[k] = vb
 		}
 	}
 
 	return res
 }
 
-// SortedKeys returns sorted keys of a map.
+// SortedKeys returns the keys of m in sorted order.
 func SortedKeys(m map[string]string) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
