@@ -1,65 +1,40 @@
 package filter
 
 import (
-	"strings"
-
 	"github.com/yourorg/envoy-diff/internal/diff"
 )
 
-// ApplyMulti applies multiple prefix filters using OR logic: a key is kept if
-// it matches any of the provided prefixes. If prefixes is empty, all keys are
-// kept. onlyChanged behaviour is identical to Apply.
-func ApplyMulti(result diff.Result, prefixes []string, onlyChanged bool) diff.Result {
+// ApplyMulti applies filtering across multiple prefixes and an optional onlyChanged flag.
+// If prefixes is empty, no prefix filtering is applied.
+// If onlyChanged is true, added and removed keys are excluded from the result.
+func ApplyMulti(r diff.Result, prefixes []string, onlyChanged bool) diff.Result {
 	if len(prefixes) == 0 {
-		if onlyChanged {
-			return diff.Result{
-				Added:   result.Added,
-				Removed: result.Removed,
-				Changed: result.Changed,
-				Same:    map[string]string{},
-			}
-		}
-		return result
+		return Apply(r, "", onlyChanged)
 	}
 
-	matches := func(key string) bool {
-		for _, p := range prefixes {
-			if strings.HasPrefix(strings.ToUpper(key), strings.ToUpper(p)) {
-				return true
-			}
-		}
-		return false
+	merged := diff.Result{
+		Added:     make(map[string]string),
+		Removed:   make(map[string]string),
+		Changed:   make(map[string][2]string),
+		Unchanged: make(map[string]string),
 	}
 
-	filterMap := func(m map[string]string) map[string]string {
-		out := map[string]string{}
-		for k, v := range m {
-			if matches(k) {
-				out[k] = v
-			}
+	for _, prefix := range prefixes {
+		filtered := Apply(r, prefix, onlyChanged)
+
+		for k, v := range filtered.Added {
+			merged.Added[k] = v
 		}
-		return out
+		for k, v := range filtered.Removed {
+			merged.Removed[k] = v
+		}
+		for k, v := range filtered.Changed {
+			merged.Changed[k] = v
+		}
+		for k, v := range filtered.Unchanged {
+			merged.Unchanged[k] = v
+		}
 	}
 
-	filterChanged := func(m map[string][2]string) map[string][2]string {
-		out := map[string][2]string{}
-		for k, v := range m {
-			if matches(k) {
-				out[k] = v
-			}
-		}
-		return out
-	}
-
-	out := diff.Result{
-		Added:   filterMap(result.Added),
-		Removed: filterMap(result.Removed),
-		Changed: filterChanged(result.Changed),
-	}
-	if onlyChanged {
-		out.Same = map[string]string{}
-	} else {
-		out.Same = filterMap(result.Same)
-	}
-	return out
+	return merged
 }
