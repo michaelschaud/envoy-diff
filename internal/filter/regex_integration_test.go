@@ -62,3 +62,24 @@ func TestApplyRegexExclude_SameKeysFiltered(t *testing.T) {
 		t.Error("APP_ENV should remain in Same")
 	}
 }
+
+// TestApplyRegexExclude_ChangedKeysFiltered verifies that Changed keys matching
+// sensitive patterns are excluded from the result.
+func TestApplyRegexExclude_ChangedKeysFiltered(t *testing.T) {
+	result := diff.Result{
+		Added:   map[string]string{},
+		Removed: map[string]string{},
+		Changed: map[string][2]string{
+			"DB_PASSWORD": {"oldpass", "newpass"},
+			"DB_HOST":     {"old.host", "new.host"},
+		},
+		Same: map[string]string{},
+	}
+	out := filter.ApplyRegexExclude(result, []string{".*password.*"})
+	if _, ok := out.Changed["DB_PASSWORD"]; ok {
+		t.Error("DB_PASSWORD in Changed should be excluded")
+	}
+	if _, ok := out.Changed["DB_HOST"]; !ok {
+		t.Error("DB_HOST should remain in Changed")
+	}
+}
