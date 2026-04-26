@@ -59,3 +59,13 @@ func TestHasDiff_False(t *testing.T) {
 		t.Error("expected HasDiff to be false")
 	}
 }
+
+func TestHasDiff_EmptyResult(t *testing.T) {
+	r := reporter.New("a", "b", diff.Result{})
+	if r.HasDiff() {
+		t.Error("expected HasDiff to be false for empty result")
+	}
+	if r.Stats.Added != 0 || r.Stats.Removed != 0 || r.Stats.Changed != 0 || r.Stats.Same != 0 {
+		t.Errorf("expected all stats to be 0 for empty result, got %+v", r.Stats)
+	}
+}
