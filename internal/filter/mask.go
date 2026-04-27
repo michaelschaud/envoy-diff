@@ -59,3 +59,38 @@ func keyMatchesSubstring(key string, substrings []string) bool {
 	}
 	return false
 }
+
+// MaskedKeys returns the list of keys from a diff.Result that would be
+// redacted by ApplyMask for the given substrings. This is useful for
+// logging or auditing which fields are being masked without exposing values.
+func MaskedKeys(result diff.Result, substrings []string) []string {
+	if len(substrings) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{})
+	for k := range result.Added {
+		if keyMatchesSubstring(k, substrings) {
+			seen[k] = struct{}{}
+		}
+	}
+	for k := range result.Removed {
+		if keyMatchesSubstring(k, substrings) {
+			seen[k] = struct{}{}
+		}
+	}
+	for k := range result.Same {
+		if keyMatchesSubstring(k, substrings) {
+			seen[k] = struct{}{}
+		}
+	}
+	for k := range result.Changed {
+		if keyMatchesSubstring(k, substrings) {
+			seen[k] = struct{}{}
+		}
+	}
+	keys := make([]string, 0, len(seen))
+	for k := range seen {
+		keys = append(keys, k)
+	}
+	return keys
+}
