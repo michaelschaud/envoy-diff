@@ -12,6 +12,14 @@ type ClampConfig struct {
 	Max *float64
 }
 
+// Validate checks that ClampConfig is consistent (Min <= Max when both are set).
+func (c ClampConfig) Validate() error {
+	if c.Min != nil && c.Max != nil && *c.Min > *c.Max {
+		return fmt.Errorf("clamp: Min (%g) must not be greater than Max (%g)", *c.Min, *c.Max)
+	}
+	return nil
+}
+
 // ApplyClamp restricts numeric env var values to the [Min, Max] range.
 // Non-numeric values are left unchanged. Nil bounds are treated as unbounded.
 func ApplyClamp(result diff.Result, cfg ClampConfig) diff.Result {
