@@ -73,3 +73,14 @@ func SortedGroupKeys(gr GroupResult) []string {
 	sort.Strings(keys)
 	return keys
 }
+
+// IsEmpty reports whether a GroupResult contains no groups or all groups are
+// empty (i.e. every sub-result has no added, removed, changed, or same keys).
+func (gr GroupResult) IsEmpty() bool {
+	for _, r := range gr.Groups {
+		if len(r.Added) > 0 || len(r.Removed) > 0 || len(r.Changed) > 0 || len(r.Same) > 0 {
+			return false
+		}
+	}
+	return true
+}
