@@ -21,8 +21,19 @@ envoy-diff staging.env production.env --limit-added 5 --limit-changed 10
 
 This will show at most 5 added keys and 10 changed keys, while showing all removed and identical keys.
 
+## Truncation Notice
+
+When a limit is applied and entries are truncated, the output will include a notice indicating how many entries were omitted. For example:
+
+```
+... and 42 more added keys (use --limit-added 0 to show all)
+```
+
+This helps you understand when you are seeing a partial view of the diff.
+
 ## Notes
 
 - Limits are applied **after** all other filters (prefix, glob, regex, value, key).
 - The selection of which entries are shown within a limit is not guaranteed to be sorted; use output formats like `--format=csv` if stable ordering is required.
 - Combining `--limit-same 0` with `--only-changed` is equivalent — neither will show identical keys.
+- Limit values must be non-negative integers; passing a negative value will result in an error.
